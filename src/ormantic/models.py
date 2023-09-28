@@ -110,7 +110,7 @@ class QuerySet:
             op_attr = FILTER_OPERATORS[op]
 
             if op in ["contains", "icontains"]:
-                value = "%" + value + "%"
+                value = f"%{value}%"
 
             if isinstance(value, Model):
                 value = value.pk
@@ -219,8 +219,8 @@ class QuerySet:
 
 class MetaModel(pydantic.main.MetaModel):
     @typing.no_type_check
-    def __new__(mcs: type, name, bases, namespace):
-        new_model = super().__new__(mcs, name, bases, namespace)
+    def __new__(cls, name, bases, namespace):
+        new_model = super().__new__(cls, name, bases, namespace)
 
         if hasattr(new_model, "Mapping"):
             columns = []
@@ -279,7 +279,7 @@ class Model(pydantic.BaseModel, metaclass=MetaModel):
         # Filter data by columns + new value keys, only if columns specified.
         if columns:
             columns = set(columns).union(new_values.keys())
-            data = dict((k, v) for k, v in data.items() if k in columns)
+            data = {k: v for k, v in data.items() if k in columns}
 
         # Build the update expression.
         pk_column = getattr(self.Mapping.table.c, self.Mapping.pk_name)
@@ -329,10 +329,7 @@ class Model(pydantic.BaseModel, metaclass=MetaModel):
         return result
 
     async def upsert(self):
-        rows_updated = 0
-        if self.pk is not None:
-            rows_updated = await self.update()
-
+        rows_updated = await self.update() if self.pk is not None else 0
         if rows_updated in {0, None}:
             await self.insert()
 

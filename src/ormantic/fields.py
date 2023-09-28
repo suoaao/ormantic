@@ -218,6 +218,8 @@ def JSON(
         column_type=sqlalchemy.JSON(),
     )
 
+
+
     class Json(object):
         @classmethod
         def __get_validators__(cls) -> "CallableGenerator":
@@ -226,20 +228,18 @@ def JSON(
         @classmethod
         def validate(cls, v: Any) -> Any:
             try:
-                if isinstance(v, str):
-                    return json.loads(v)
-                else:
-                    return v
+                return json.loads(v) if isinstance(v, str) else v
             except ValueError:
                 raise errors.JsonError()
             except TypeError:
                 raise errors.JsonTypeError()
 
+
     return type("JSON", (Json, ColumnFactory), namespace)
 
 
 def ForeignKey(to, *, allow_null: bool = False) -> Type[object]:
-    fk_string = to.Mapping.table_name + "." + to.Mapping.pk_name
+    fk_string = f"{to.Mapping.table_name}.{to.Mapping.pk_name}"
     to_field = to.__fields__[to.Mapping.pk_name]
     namespace = dict(
         to=to,
